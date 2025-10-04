@@ -458,33 +458,11 @@ echo:       ______________________________________________________________
 echo:
 echo:                 Activation Methods:
 echo:
-rem if defined _hwidgo (
-rem call :dk_color3 %_White% "             [1] " %_Green% "HWID" %_White% "                - Windows"
-rem ) else (
-rem echo:             [1] HWID                - Windows
-rem )
 if defined _ohookgo (
 call :dk_color3 %_White% "             [2] " %_Green% "Ohook" %_White% "               - Office"
 ) else (
 echo:             [2] Ohook               - Office
 )
-rem if defined _tsforgego (
-rem call :dk_color3 %_White% "             [3] " %_Green% "TSforge" %_White% "             - Windows / Office / ESU"
-rem ) else (
-rem echo:             [3] TSforge             - Windows / Office / ESU
-rem )
-rem echo:             [4] KMS38               - Windows
-rem echo:             [5] Online KMS          - Windows / Office
-rem echo:             __________________________________________________ 
-rem echo:
-rem echo:             [6] Check Activation Status
-rem echo:             [7] Change Windows Edition
-rem echo:             [8] Change Office Edition
-rem echo:             __________________________________________________      
-rem echo:
-rem echo:             [9] Troubleshoot
-rem echo:             [E] Extras
-rem echo:             [H] Help
 echo:             [0] Exit
 echo:       ______________________________________________________________
 echo:
@@ -495,15 +473,7 @@ set _erl=%errorlevel%
 if %_erl%==12 exit /b
 if %_erl%==11 (start %selfgit% & start %github% & start %mas%troubleshoot & goto :MainMenu)
 irem f %_erl%==10 goto :Extras
-rem if %_erl%==9 setlocal & call :troubleshoot      & cls & endlocal & goto :MainMenu
-rem if %_erl%==8 setlocal & call :change_offedition & cls & endlocal & goto :MainMenu
-rem if %_erl%==7 setlocal & call :change_winedition & cls & endlocal & goto :MainMenu
-rem if %_erl%==6 setlocal & call :check_actstatus   & cls & endlocal & goto :MainMenu
-rem if %_erl%==5 setlocal & call :KMSActivation     & cls & endlocal & goto :MainMenu
-rem if %_erl%==4 setlocal & call :KMS38Activation   & cls & endlocal & goto :MainMenu
-rem if %_erl%==3 setlocal & call :TSforgeActivation & cls & endlocal & goto :MainMenu
 if %_erl%==2 setlocal & call :OhookActivation   & cls & endlocal & goto :MainMenu
-rem if %_erl%==1 setlocal & call :HWIDActivation    & cls & endlocal & goto :MainMenu
 goto :MainMenu
 
 :dk_color3
@@ -576,15 +546,7 @@ echo:
 echo:                     Extract $OEM$ folder on the desktop           
 echo:         ____________________________________________________________
 echo:
-rem echo:            [1] HWID             [Windows]
 echo:            [2] Ohook            [Office]
-rem echo:            [3] TSforge          [Windows / ESU / Office]
-rem echo:            [4] KMS38            [Windows]
-rem echo:            [5] Online KMS       [Windows / Office]
-erem cho:
-rem echo:            [6] HWID    [Windows] ^+ Ohook [Office]
-rem echo:            [7] HWID    [Windows] ^+ Ohook [Office] ^+ TSforge [ESU]
-rem echo:            [8] TSforge [Windows] ^+ Online KMS [Office]
 echo:
 call :dk_color2 %_White% "            [R] " %_Green% "ReadMe"
 echo:            [0] Go Back
@@ -594,16 +556,7 @@ call :dk_color2 %_White% "             " %_Green% "Choose a menu option using yo
 choice /C:12345678R0 /N
 set _erl=%errorlevel%
 
-if %_erl%==10 goto:Extras
-if %_erl%==9 start %mas%oem-folder &goto:Extract$OEM$2
-if %_erl%==8 (set "_oem=TSforge [Windows] + Online KMS [Office]" & set "para=/Z-Windows /K-Office" &goto:Extract$OEM$3)
-if %_erl%==7 (set "_oem=HWID [Windows] + Ohook [Office] + TSforge [ESU]" & set "para=/HWID /Ohook /Z-ESU" &goto:Extract$OEM$3)
-if %_erl%==6 (set "_oem=HWID [Windows] + Ohook [Office]" & set "para=/HWID /Ohook" &goto:Extract$OEM$3)
-if %_erl%==5 (set "_oem=Online KMS" & set "para=/K-WindowsOffice" &goto:Extract$OEM$3)
-if %_erl%==4 (set "_oem=KMS38" & set "para=/KMS38" &goto:Extract$OEM$3)
-if %_erl%==3 (set "_oem=TSforge" & set "para=/Z-WindowsESUOffice" &goto:Extract$OEM$3)
 if %_erl%==2 (set "_oem=Ohook" & set "para=/Ohook" &goto:Extract$OEM$3)
-if %_erl%==1 (set "_oem=HWID" & set "para=/HWID" &goto:Extract$OEM$3)
 goto :Extract$OEM$2
 
 ::========================================================================================================================================
