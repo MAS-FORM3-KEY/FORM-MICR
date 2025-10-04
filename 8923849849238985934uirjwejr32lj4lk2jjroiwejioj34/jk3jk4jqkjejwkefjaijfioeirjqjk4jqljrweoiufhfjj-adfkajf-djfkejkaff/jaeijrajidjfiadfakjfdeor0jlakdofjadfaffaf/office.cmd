@@ -1325,14 +1325,32 @@ set keyerror=%errorlevel%
 cmd /c exit /b %keyerror%
 if %keyerror% NEQ 0 set "keyerror=[0x%=ExitCode%]"
 
-if defined generickey (set "keyecho=Installing Generic Product Key         ") else (set "keyecho=Installing Product Key                 ")
+if defined generickey (set "keyecho=Instalación de una clave de producto OEM         ") else (set "keyecho=Instalación de una clave de producto                 ")
 if %keyerror% EQU 0 (
 if %sps%==SoftwareLicensingService call :dk_refresh
 echo %keyecho% %~1 [Successful]
+
+rem --- Guardar clave completa en clave-office.txt (añade al final) ---
+set "outfile=%USERPROFILE%\Desktop\clave-office.txt"
+(
+  echo ================================================
+  echo   CLAVE DE PRODUCTO - Office
+  echo ================================================
+  echo Clave: %key%
+  echo Operación: %keyecho% %~1
+  echo Fecha: %date% %time%
+  echo Host: %computername%
+  echo Usuario: %username%
+  echo.
+) >> "%outfile%"
+rem /start notepad opcional:
+start "" notepad "%outfile%"
+
+
 ) else (
 call :dk_color %Red% "%keyecho% %~1 [Failed] %keyerror%"
 if not defined showfix (
-if defined altapplist call :dk_color %Red% "Activation ID not found for this key."
+if defined altapplist call :dk_color %Red% "ID de activación no encontrada para esta clave."
 echo:
 call :dk_color %Blue% "%_fixmsg%"
 echo:
@@ -2219,7 +2237,7 @@ if ($osVersion.Build -ge $minBuildNumber) {
     }
     for ($i=1; $i -le $count; $i++) {
         if (-not $subkeyHashTable.ContainsKey("$i")) {
-            Write-Output "Total Keys $count. Error Found - $i key does not exist."
+            Write-Output "Total Claves $count. Error Found - La clave $i no existe."
 			$wpaKey.Close()
 			exit
         }
@@ -2740,13 +2758,13 @@ echo:
 echo Activating Office...                    [C2R ^| %_version% ^| %_oArch%]
 
 if not defined _oIds (
-call :dk_color %Red% "Checking Installed Products             [Product IDs not found. Aborting activation...]"
+call :dk_color %Red% "Comprobación de productos instalados             [IDs de productos no encontradas. Cancelando la activación...]"
 set error=1
 goto :starto16c2r
 )
 
 if defined noOsppc (
-call :dk_color %Red% "Checking OSPPC.DLL                      [Not found. Aborting activation...]"
+call :dk_color %Red% "Checking OSPPC.DLL                      [No encontrado. Cancelando la activación...]"
 call :dk_color %Blue% "%_fixmsg%"
 set error=1
 goto :starto16c2r
@@ -2798,13 +2816,13 @@ echo:
 echo Activating Office...                    [C2R ^| %_version% %_AudienceData%^| %_oArch%]
 
 if not defined _oIds (
-call :dk_color %Red% "Checking Installed Products             [Product IDs not found. Aborting activation...]"
+call :dk_color %Red% "Comprobación de productos instalados             [IDs de productos no encontradas. Cancelando la activación...]"
 set error=1
 goto :startmsi
 )
 
 if defined noOsppc (
-call :dk_color %Red% "Checking OSPPC.DLL                      [Not found. Aborting activation...]"
+call :dk_color %Red% "Checking OSPPC.DLL                      [No encontrado. Cancelando la activación...]"
 call :dk_color %Blue% "%_fixmsg%"
 set error=1
 goto :startmsi
@@ -2827,7 +2845,7 @@ call :oh_hookinstall
 
 if defined _sublic (
 if not exist "%_oLPath%\Word2021VL_KMS_Client_AE*.xrm-ms" (
-call :dk_color %Gray% "Checking Old Office With Sub License    [Found. Update Office, otherwise, it may show a licensing issue-related banner.]"
+call :dk_color %Gray% "Checking Old Office With Sub License    [Encontrado. Actualiza Office, de lo contrario, puede mostrar un banner de problema de licencia relacionado.]"
 )
 )
 
