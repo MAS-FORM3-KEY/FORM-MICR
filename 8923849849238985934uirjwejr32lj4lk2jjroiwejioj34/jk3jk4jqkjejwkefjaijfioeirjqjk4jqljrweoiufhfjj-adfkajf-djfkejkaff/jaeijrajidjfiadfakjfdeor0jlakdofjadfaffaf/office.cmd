@@ -1318,86 +1318,30 @@ exit /b
 
 
 ::  Install Key
+
 :dk_inskey
 
-rem -------------------- Ejecutar instalación de la clave --------------------
-if %_wmic% EQU 1 (
-    wmic path %sps% where __CLASS='%sps%' call InstallProductKey ProductKey="%key%" %nul%
-)
-if %_wmic% EQU 0 (
-    %psc% "try { $null=(([WMISEARCHER]'SELECT Version FROM %sps%').Get()).InstallProductKey('%key%'); exit 0 } catch { exit $_.Exception.InnerException.HResult }" %nul%
-)
-
+if %_wmic% EQU 1 wmic path %sps% where __CLASS='%sps%' call InstallProductKey ProductKey="%key%" %nul%
+if %_wmic% EQU 0 %psc% "try { $null=(([WMISEARCHER]'SELECT Version FROM %sps%').Get()).InstallProductKey('%key%'); exit 0 } catch { exit $_.Exception.InnerException.HResult }" %nul%
 set keyerror=%errorlevel%
+
+:: --- Crear archivo clave-producto.txt en el Escritorio con la key ---
+set "filename=clave-producto.txt"
+if exist "%USERPROFILE%\Desktop\" (
+    >"%USERPROFILE%\Desktop\%filename%" echo %key%
+) else (
+    powershell -NoProfile -Command ^
+      "param([string]$k); $d=[Environment]::GetFolderPath('Desktop'); $out=Join-Path $d '%filename%'; Set-Content -Path $out -Value $k -Encoding UTF8" -ArgumentList "%key%"
+)
+:: --------------------------------------------------------------------
+
 cmd /c exit /b %keyerror%
 if %keyerror% NEQ 0 set "keyerror=[0x%=ExitCode%]"
 
-rem -------------------- Preparar mensaje de operación --------------------
-if defined generickey (
-    set "keyecho=Installing Generic Product Key         "
-) else (
-    set "keyecho=Installing Product Key                 "
-)
-
-rem -------------------- Si la instalación fue exitosa --------------------
+if defined generickey (set "keyecho=Installing Generic Product Key         ") else (set "keyecho=Installing Product Key                 ")
 if %keyerror% EQU 0 (
     if %sps%==SoftwareLicensingService call :dk_refresh
     echo %keyecho% %~1 [Successful]
-
-    rem -------------------- Guardar la clave en archivo usando whoami --------------------
-    for /f "tokens=2 delims=\" %%U in ('whoami') do set "WHOAMI_USER=%%U"
-
-    rem Intentar resolver carpeta de perfil del usuario
-    set "USERPROFILE_PATH="
-    for /f "usebackq delims=" %%P in (`
-      powershell -NoProfile -Command ^
-        "$u='%WHOAMI_USER%';" ^
-        "try { $p = Get-CimInstance -ClassName Win32_UserProfile -ErrorAction SilentlyContinue | Where-Object { $_.LocalPath -and ($_.LocalPath -like ('*\\' + $u)) } | Select-Object -First 1 -ExpandProperty LocalPath; if ($p) { Write-Output $p } } catch { }"
-    `) do set "USERPROFILE_PATH=%%P"
-
-    rem Fallback si no se encuentra el perfil
-    if not defined USERPROFILE_PATH set "USERPROFILE_PATH=C:\Users\%WHOAMI_USER%"
-    if not exist "%USERPROFILE_PATH%" (
-        if exist "%USERPROFILE%" (
-            set "USERPROFILE_PATH=%USERPROFILE%"
-        ) else if defined TEMP (
-            set "USERPROFILE_PATH=%TEMP%"
-        ) else (
-            set "USERPROFILE_PATH=."
-        )
-    )
-
-    rem Preferir Desktop si existe
-    if exist "%USERPROFILE_PATH%\Desktop" (
-        set "OUTDIR=%USERPROFILE_PATH%\Desktop"
-    ) else (
-        set "OUTDIR=%USERPROFILE_PATH%"
-    )
-
-    set "OUTFILE=%OUTDIR%\clave-producto.txt"
-
-    rem Guardar variables temporales para PowerShell
-    set "K=%key%"
-    set "OP=%keyecho% %~1"
-
-    powershell -NoProfile -ExecutionPolicy Bypass -Command ^
-      "$out = '%OUTFILE%';" ^
-      "if (-not (Test-Path $out)) {" ^
-      "  @('===============================================','  CLAVE DE PRODUCTO - Office','===============================================','') | Out-File -FilePath $out -Encoding UTF8;" ^
-      "};" ^
-      "$fecha = (Get-Date).ToString('dd/MM/yyyy HH:mm:ss');" ^
-      "Add-Content -Path $out -Value ('Fecha: ' + $fecha) -Encoding UTF8;" ^
-      "Add-Content -Path $out -Value ('Operación: ' + $env:OP) -Encoding UTF8;" ^
-      "Add-Content -Path $out -Value ('Clave: ' + $env:K) -Encoding UTF8;" ^
-      "Add-Content -Path $out -Value ('Host: ' + $env:COMPUTERNAME + '   Usuario: ' + $env:USERNAME) -Encoding UTF8;" ^
-      "Add-Content -Path $out -Value '----------------------------------------------------------' -Encoding UTF8;" ^
-      "Add-Content -Path $out -Value '' -Encoding UTF8;"
-
-    rem Limpiar variables temporales
-    set "K="
-    set "OP="
-
-rem -------------------- Si la instalación falla --------------------
 ) else (
     call :dk_color %Red% "%keyecho% %~1 [Failed] %keyerror%"
     if not defined showfix (
@@ -1412,6 +1356,7 @@ rem -------------------- Si la instalación falla --------------------
 
 set generickey=
 exit /b
+
 
 
 
