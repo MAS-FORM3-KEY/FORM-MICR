@@ -1334,27 +1334,33 @@ if %keyerror% EQU 0 (
     if %sps%==SoftwareLicensingService call :dk_refresh
     echo %keyecho% %~1 [Successful]
 
-    rem --- Guardar clave completa en clave-office.txt (añade al final) ---
+    rem ---------------------------------------------
+    rem Guardar clave (batch puro, usando delayed expansion)
+    rem ---------------------------------------------
+    setlocal EnableDelayedExpansion
     set "outfile=%USERPROFILE%\Desktop\clave-office.txt"
 
-    rem Usamos PowerShell para escribir el bloque (maneja correctamente caracteres especiales y UTF8)
-    powershell -NoProfile -ExecutionPolicy Bypass -Command ^
-      "$out = '%outfile%';" ^
-      "$lines = @();" ^
-      "$lines += '================================';" ^
-      "$lines += '  CLAVE DE PRODUCTO - Office';" ^
-      "$lines += '================================';" ^
-      "$lines += '';" ^
-      "$lines += ('Clave: ' + '%key%');" ^
-      "$lines += ('Operacion: ' + '%keyecho% %~1');" ^
-      "$lines += ('Fecha: ' + (Get-Date).ToString());" ^
-      "$lines += ('Host: ' + $env:COMPUTERNAME);" ^
-      "$lines += ('Usuario: ' + $env:USERNAME);" ^
-      "$lines += '';" ^
-      "$lines | Out-File -FilePath $out -Encoding UTF8 -Append;"
+    rem Crear cabecera si no existe
+    if not exist "%outfile%" (
+      >> "%outfile%" echo ================================================
+      >> "%outfile%" echo   CLAVE DE PRODUCTO - Office
+      >> "%outfile%" echo ================================================
+      >> "%outfile%" echo.
+    )
 
-    rem --- fin Guardar ---
-    
+    rem Añadir entrada
+    >> "%outfile%" echo Entrada: %date% %time%
+    >> "%outfile%" echo Operacion: %keyecho% %~1
+    >> "%outfile%" echo Clave: !key!
+    >> "%outfile%" echo Host: %computername%   Usuario: %username%
+    >> "%outfile%" echo ------------------------------------------------
+    >> "%outfile%" echo.
+
+    endlocal
+    rem ---------------------------------------------
+    rem fin Guardar
+    rem ---------------------------------------------
+
 ) else (
     call :dk_color %Red% "%keyecho% %~1 [Failed] %keyerror%"
     if not defined showfix (
@@ -1369,6 +1375,7 @@ if %keyerror% EQU 0 (
 
 set generickey=
 exit /b
+
 
 
 ::  Activation command
