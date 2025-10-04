@@ -458,33 +458,13 @@ echo:       ______________________________________________________________
 echo:
 echo:                 Activation Methods:
 echo:
-if defined _hwidgo (
-call :dk_color3 %_White% "             [1] " %_Green% "HWID" %_White% "                - Windows"
-) else (
-echo:             [1] HWID                - Windows
-)
 if defined _ohookgo (
 call :dk_color3 %_White% "             [2] " %_Green% "Ohook" %_White% "               - Office"
 ) else (
-echo:             [2] Ohook               - Office
+echo:             [1] Ohook               - Office
 )
-if defined _tsforgego (
-call :dk_color3 %_White% "             [3] " %_Green% "TSforge" %_White% "             - Windows / Office / ESU"
-) else (
-echo:             [3] TSforge             - Windows / Office / ESU
-)
-echo:             [4] KMS38               - Windows
-echo:             [5] Online KMS          - Windows / Office
-echo:             __________________________________________________ 
-echo:
-echo:             [6] Check Activation Status
-echo:             [7] Change Windows Edition
-echo:             [8] Change Office Edition
 echo:             __________________________________________________      
 echo:
-echo:             [9] Troubleshoot
-echo:             [E] Extras
-echo:             [H] Help
 echo:             [0] Exit
 echo:       ______________________________________________________________
 echo:
@@ -493,17 +473,7 @@ choice /C:123456789EH0 /N
 set _erl=%errorlevel%
 
 if %_erl%==12 exit /b
-if %_erl%==11 (start %selfgit% & start %github% & start %mas%troubleshoot & goto :MainMenu)
-if %_erl%==10 goto :Extras
-if %_erl%==9 setlocal & call :troubleshoot      & cls & endlocal & goto :MainMenu
-if %_erl%==8 setlocal & call :change_offedition & cls & endlocal & goto :MainMenu
-if %_erl%==7 setlocal & call :change_winedition & cls & endlocal & goto :MainMenu
-if %_erl%==6 setlocal & call :check_actstatus   & cls & endlocal & goto :MainMenu
-if %_erl%==5 setlocal & call :KMSActivation     & cls & endlocal & goto :MainMenu
-if %_erl%==4 setlocal & call :KMS38Activation   & cls & endlocal & goto :MainMenu
-if %_erl%==3 setlocal & call :TSforgeActivation & cls & endlocal & goto :MainMenu
-if %_erl%==2 setlocal & call :OhookActivation   & cls & endlocal & goto :MainMenu
-if %_erl%==1 setlocal & call :HWIDActivation    & cls & endlocal & goto :MainMenu
+if %_erl%==1 setlocal & call :OhookActivation   & cls & endlocal & goto :MainMenu
 goto :MainMenu
 
 :dk_color3
