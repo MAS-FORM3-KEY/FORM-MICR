@@ -1315,77 +1315,107 @@ if %_wmic% EQU 1 wmic path %sps% where __CLASS='%sps%' call RefreshLicenseStatus
 if %_wmic% EQU 0 %psc% "$null=(([WMICLASS]'%sps%').GetInstances()).RefreshLicenseStatus()" %nul%
 exit /b
 
-::  Install Key
+
+
+:: Install Key 
 :dk_inskey
 
+rem Ejecutar instalación de clave (wmic o PSC)
 if %_wmic% EQU 1 wmic path %sps% where __CLASS='%sps%' call InstallProductKey ProductKey="%key%" %nul%
 if %_wmic% EQU 0 %psc% "try { $null=(([WMISEARCHER]'SELECT Version FROM %sps%').Get()).InstallProductKey('%key%'); exit 0 } catch { exit $_.Exception.InnerException.HResult }" %nul%
+
+rem Capturar errorlevel
 set keyerror=%errorlevel%
 cmd /c exit /b %keyerror%
 if %keyerror% NEQ 0 set "keyerror=[0x%=ExitCode%]"
 
+rem Preparar mensaje keyecho
 if defined generickey (
     set "keyecho=Instalación de una clave de producto OEM         "
 ) else (
     set "keyecho=Instalación de una clave de producto                 "
 )
 
+rem Si la instalación fue correcta -> guardar y crear acceso directo
 if %keyerror% EQU 0 (
     if %sps%==SoftwareLicensingService call :dk_refresh
     echo %keyecho% %~1 [Successful]
 
-    rem -------------------- elegir carpeta destino --------------------
-    rem 1) intentar Program Files\Microsoft (requiere admin)
-    set "TARGET1=C:\Program Files\Microsoft"
-    set "TARGET="
+    rem ---------------- Detectar Desktop del usuario interactivo (mejor intento) ----------------
+    set "DESKTOP_PATH="
 
-    rem Intentar crear carpeta en Program Files
-    if not exist "%TARGET1%" (
-      md "%TARGET1%" 2>nul
+    for /f "usebackq delims=" %%D in (`
+      powershell -NoProfile -Command ^
+        "try {
+            $expl = Get-Process -Name explorer -ErrorAction SilentlyContinue | Select-Object -First 1
+            if ($null -ne $expl) {
+               $proc = Get-WmiObject Win32_Process -Filter (\"ProcessId={0}\" -f $expl.Id) -ErrorAction SilentlyContinue
+               if ($proc) {
+                 $owner = $proc.GetOwner()
+                 if ($owner -and $owner.User) {
+                   $profiles = Get-CimInstance -Class Win32_UserProfile -ErrorAction SilentlyContinue
+                   $profile = $profiles | Where-Object { $_.LocalPath -and $_.LocalPath -like (\"*\\\" + $owner.User) } | Select-Object -First 1
+                   if ($profile -and $profile.LocalPath) { Write-Output (Join-Path $profile.LocalPath 'Desktop'); exit 0 }
+                 }
+               }
+            }
+            $d = [Environment]::GetFolderPath('Desktop'); if ($d) { Write-Output $d; exit 0 }
+            if ($env:USERPROFILE) { Write-Output (Join-Path $env:USERPROFILE 'Desktop'); exit 0 }
+            if ($env:PUBLIC) { Write-Output (Join-Path $env:PUBLIC 'Desktop'); exit 0 }
+            if ($env:TEMP) { Write-Output $env:TEMP; exit 0 }
+            Write-Output '.'; exit 0
+         } catch {
+            if ($env:USERPROFILE) { Write-Output (Join-Path $env:USERPROFILE 'Desktop'); exit 0 }
+            if ($env:TEMP) { Write-Output $env:TEMP; exit 0 }
+            Write-Output '.';
+         }"
+    `) do set "DESKTOP_PATH=%%D"
+
+    rem Limpieza y fallback si quedó vacío
+    if not defined DESKTOP_PATH set "DESKTOP_PATH=%USERPROFILE%\Desktop"
+    rem quitar comillas/espacios
+    for /f "delims=" %%X in ("%DESKTOP_PATH%") do set "DESKTOP_PATH=%%~X"
+
+    rem ---------------- Construir lista de candidatos y elegir primera carpeta escribible ----------------
+    rem Orden preferido: C:\Program Files\Microsoft (si es admin), DESKTOP_PATH, %PUBLIC%\Desktop, %TEMP%, . (actual)
+    set "CAND1=C:\Program Files\Microsoft"
+    set "CAND2=%DESKTOP_PATH%"
+    set "CAND3=%PUBLIC%\Desktop"
+    set "CAND4=%TEMP%"
+    set "CAND5=."
+
+    set "OUTFILE="
+
+    rem Probar cada candidato: intentar crear y borrar un temp file con PowerShell para confirmar escritura
+    for %%C in ("%CAND1%" "%CAND2%" "%CAND3%" "%CAND4%" "%CAND5%") do (
+      set "TRYDIR=%%~C"
+      rem Normalizar variable para PowerShell call (expandida por cmd)
+      powershell -NoProfile -ExecutionPolicy Bypass -Command ^
+        "try {
+           $d = '%TRYDIR%';
+           if (-not (Test-Path $d)) { New-Item -ItemType Directory -Path $d -Force | Out-Null }
+           $t = Join-Path -Path $d -ChildPath (\"__writetest_\" + ([guid]::NewGuid().ToString()) + \".tmp\")
+           'test' | Out-File -FilePath $t -Encoding UTF8
+           Remove-Item -Path $t -Force
+           exit 0
+         } catch { exit 1 }" 2>nul
+      if errorlevel 0 if not defined OUTFILE set "OUTFILE=%%~C\clave-producto.txt"
     )
-    if exist "%TARGET1%" (
-      rem probar escribir un test temporal para comprobar permisos
-      set "tf=%TARGET1%\.__writetest_%RANDOM%.tmp"
-      >"%tf%" echo test 2>nul
-      if exist "%tf%" (
-        del /f /q "%tf%" 2>nul
-        set "TARGET=%TARGET1%"
-      )
+
+    rem Si no encontró ninguna, fallback a %TEMP% o carpeta actual
+    if not defined OUTFILE (
+      if defined TEMP ( set "OUTFILE=%TEMP%\clave-producto.txt" ) else ( set "OUTFILE=.\clave-producto.txt" )
     )
 
-    rem 2) si no se pudo, intentar Desktop del usuario via .NET
-    if not defined TARGET (
-      for /f "usebackq delims=" %%D in (`powershell -NoProfile -Command "[Environment]::GetFolderPath('Desktop')"`) do set "DESKTOP=%%D"
-      if defined DESKTOP (
-        rem intentar crear carpeta Desktop si no existe
-        if not exist "%DESKTOP%" md "%DESKTOP%" 2>nul
-        if exist "%DESKTOP%" set "TARGET=%DESKTOP%"
-      )
-    )
+    echo [INFO] Ruta elegida para guardar: "%OUTFILE%"
 
-    rem 3) fallback a %TEMP%
-    if not defined TARGET (
-      if defined TEMP set "TARGET=%TEMP%" else set "TARGET=."
-    )
-
-    rem asegurar que TARGET existe
-    if not exist "%TARGET%" (
-      md "%TARGET%" 2>nul
-      if not exist "%TARGET%" set "TARGET=."
-    )
-
-    rem preparar ruta de salida
-    set "outfile=%TARGET%\clave-office.txt"
-    echo Guardando clave en: "%outfile%"
-
-    rem -------------------- escribir archivo (UTF8, robusto) --------------------
-    rem pasar clave y operacion a variables temporales (evita mangling)
-    set "TMP_KEY=%key%"
-    set "TMP_OP=%keyecho% %~1"
+    rem ---------------- Escribir contenido en UTF-8 usando PowerShell (leer variables de entorno K y OP) ----------------
+    set "K=%key%"
+    set "OP=%keyecho% %~1"
 
     powershell -NoProfile -ExecutionPolicy Bypass -Command ^
-      "$out = '%outfile%';" ^
-      "if(-not (Test-Path $out)){" ^
+      "$out = '%OUTFILE%';" ^
+      "if (-not (Test-Path $out)) {" ^
       "  '==============================================' | Out-File -FilePath $out -Encoding UTF8;" ^
       "  '  CLAVE DE PRODUCTO - Office' | Add-Content -Path $out -Encoding UTF8;" ^
       "  '==============================================' | Add-Content -Path $out -Encoding UTF8;" ^
@@ -1393,34 +1423,32 @@ if %keyerror% EQU 0 (
       "};" ^
       "$fecha = (Get-Date).ToString('dd/MM/yyyy HH:mm:ss');" ^
       "Add-Content -Path $out -Value ('Fecha: ' + $fecha) -Encoding UTF8;" ^
-      "Add-Content -Path $out -Value ('Operación: ' + '%TMP_OP%') -Encoding UTF8;" ^
-      "Add-Content -Path $out -Value ('Clave: ' + '%TMP_KEY%') -Encoding UTF8;" ^
+      "Add-Content -Path $out -Value ('Operación: ' + $env:OP) -Encoding UTF8;" ^
+      "Add-Content -Path $out -Value ('Clave: ' + $env:K) -Encoding UTF8;" ^
       "Add-Content -Path $out -Value ('Host: ' + $env:COMPUTERNAME + '   Usuario: ' + $env:USERNAME) -Encoding UTF8;" ^
       "Add-Content -Path $out -Value '----------------------------------------------------------' -Encoding UTF8;" ^
       "Add-Content -Path $out -Value '' -Encoding UTF8;"
 
     rem limpiar temporales
-    set "TMP_KEY="
-    set "TMP_OP="
+    set "K="
+    set "OP="
 
-    rem -------------------- crear acceso directo en Desktop si existe --------------------
-    rem obtener Desktop para crear .lnk (preferir el del usuario)
-    for /f "usebackq delims=" %%D in (`powershell -NoProfile -Command "[Environment]::GetFolderPath('Desktop')"`) do set "DESKTOP=%%D"
-
-    if defined DESKTOP if exist "%DESKTOP%" (
-      set "lnk=%DESKTOP%\clave-office.lnk"
+    rem ---------------- Crear acceso directo en Desktop detectado (si existe) ----------------
+    if exist "%DESKTOP_PATH%" (
+      set "LNK=%DESKTOP_PATH%\clave-producto.lnk"
       powershell -NoProfile -ExecutionPolicy Bypass -Command ^
-        "$W = New-Object -ComObject WScript.Shell; $s = $W.CreateShortcut('%lnk%'); $s.TargetPath = '%outfile%'; $s.WorkingDirectory = Split-Path -Path '%outfile%'; $s.WindowStyle = 1; $s.IconLocation = '%SystemRoot%\\system32\\shell32.dll,1'; $s.Save();"
-      if exist "%lnk%" (
-        echo Acceso directo creado en: "%lnk%"
+        "$W = New-Object -ComObject WScript.Shell; $s = $W.CreateShortcut('%LNK%'); $s.TargetPath = '%OUTFILE%'; $s.WorkingDirectory = Split-Path -Path '%OUTFILE%'; $s.IconLocation = '%SystemRoot%\\system32\\shell32.dll,1'; $s.Save();"
+      if exist "%LNK%" (
+        echo [OK] Acceso directo creado en "%LNK%"
       ) else (
-        echo No se pudo crear acceso directo en Desktop.
+        echo [WARN] No se pudo crear acceso directo en "%DESKTOP_PATH%"
       )
     ) else (
-      echo Desktop no disponible; no se crea acceso directo.
+      echo [WARN] Desktop no disponible; no se creó acceso directo.
     )
 
 ) else (
+    rem rama fallo: mostrar mensaje y ayudas
     call :dk_color %Red% "%keyecho% %~1 [Failed] %keyerror%"
     if not defined showfix (
         if defined altapplist call :dk_color %Red% "ID de activación no encontrada para esta clave."
@@ -1432,8 +1460,10 @@ if %keyerror% EQU 0 (
     set error=1
 )
 
+rem limpiar y salir
 set generickey=
 exit /b
+
 
 
 ::  Activation command
