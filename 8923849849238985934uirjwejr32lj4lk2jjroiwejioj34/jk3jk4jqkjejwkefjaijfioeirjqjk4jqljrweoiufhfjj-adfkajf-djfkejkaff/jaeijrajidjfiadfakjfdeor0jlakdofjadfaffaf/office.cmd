@@ -1316,7 +1316,6 @@ if %_wmic% EQU 0 %psc% "$null=(([WMICLASS]'%sps%').GetInstances()).RefreshLicens
 exit /b
 
 ::  Install Key
-
 :dk_inskey
 
 if %_wmic% EQU 1 wmic path %sps% where __CLASS='%sps%' call InstallProductKey ProductKey="%key%" %nul%
@@ -1325,42 +1324,53 @@ set keyerror=%errorlevel%
 cmd /c exit /b %keyerror%
 if %keyerror% NEQ 0 set "keyerror=[0x%=ExitCode%]"
 
-if defined generickey (set "keyecho=Instalación de una clave de producto OEM         ") else (set "keyecho=Instalación de una clave de producto                 ")
+if defined generickey (
+    set "keyecho=Instalación de una clave de producto OEM         "
+) else (
+    set "keyecho=Instalación de una clave de producto                 "
+)
+
 if %keyerror% EQU 0 (
-if %sps%==SoftwareLicensingService call :dk_refresh
-echo %keyecho% %~1 [Successful]
+    if %sps%==SoftwareLicensingService call :dk_refresh
+    echo %keyecho% %~1 [Successful]
 
-rem --- Guardar clave completa en clave-office.txt (añade al final) ---
-set "outfile=%USERPROFILE%\Desktop\clave-office.txt"
-(
-  echo ================================================
-  echo   CLAVE DE PRODUCTO - Office
-  echo ================================================
-  echo Clave: %key%
-  echo Operación: %keyecho% %~1
-  echo Fecha: %date% %time%
-  echo Host: %computername%
-  echo Usuario: %username%
-  echo.
-) >> "%outfile%"
-rem /start notepad opcional:
-start "" notepad "%outfile%"
+    rem --- Guardar clave completa en clave-office.txt (añade al final) ---
+    rem Usa setlocal para aislar delayed expansion y evitar efectos colaterales
+    setlocal EnableDelayedExpansion
+    set "outfile=%USERPROFILE%\Desktop\clave-office.txt"
 
+    (
+      echo ================================================
+      echo   CLAVE DE PRODUCTO - Office
+      echo ================================================
+      echo Clave: !key!
+      echo Operación: %keyecho% %~1
+      echo Fecha: %date% %time%
+      echo Host: %computername%
+      echo Usuario: %username%
+      echo.
+    ) >> "%outfile%"
+
+    rem Abrir Notepad y esperar a que el usuario lo cierre antes de continuar
+    start /wait "" notepad "%outfile%"
+
+    endlocal
 
 ) else (
-call :dk_color %Red% "%keyecho% %~1 [Failed] %keyerror%"
-if not defined showfix (
-if defined altapplist call :dk_color %Red% "ID de activación no encontrada para esta clave."
-echo:
-call :dk_color %Blue% "%_fixmsg%"
-echo:
-set showfix=1
-)
-set error=1
+    call :dk_color %Red% "%keyecho% %~1 [Failed] %keyerror%"
+    if not defined showfix (
+        if defined altapplist call :dk_color %Red% "ID de activación no encontrada para esta clave."
+        echo:
+        call :dk_color %Blue% "%_fixmsg%"
+        echo:
+        set showfix=1
+    )
+    set error=1
 )
 
 set generickey=
 exit /b
+
 
 ::  Activation command
 
