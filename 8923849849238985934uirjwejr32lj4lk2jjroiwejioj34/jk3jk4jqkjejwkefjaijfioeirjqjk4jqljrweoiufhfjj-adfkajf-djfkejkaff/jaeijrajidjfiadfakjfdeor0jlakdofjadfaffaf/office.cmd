@@ -76,10 +76,10 @@ set "selfgit=ht%blank%tps%blank%://git.acti%blank%vated.win/massg%blank%rave/Mic
 sc query Null | find /i "RUNNING"
 if %errorlevel% NEQ 0 (
 echo:
-echo Null service is not running, script may crash...
+echo El servicio nulo no se está ejecutando, el script puede fallar...
 echo:
 echo:
-echo Check this webpage for help - %mas%fix_service
+echo Consulte esta página web para obtener ayuda - %mas%fix_service
 echo:
 echo:
 ping 127.0.0.1 -n 20
@@ -91,10 +91,10 @@ cls
 pushd "%~dp0"
 >nul findstr /v "$" "%~nx0" && (
 echo:
-echo Error - Script either has LF line ending issue or an empty line at the end of the script is missing.
+echo Error: el script tiene un problema al finalizar la línea LF o falta una línea vacía al final del script.
 echo:
 echo:
-echo Check this webpage for help - %mas%troubleshoot
+echo Consulte esta página web para obtener ayuda - %mas%troubleshoot
 echo:
 echo:
 ping 127.0.0.1 -n 20 >nul
@@ -107,7 +107,7 @@ popd
 
 cls
 color 07
-title  Microsoft_Activation_Scripts %masver%
+title  Microsoft_Activation_Scripts_SUSHELL %masver%
 
 set _args=
 set _elev=
@@ -136,7 +136,7 @@ call :dk_setvar
 
 if %winbuild% EQU 1 (
 %eline%
-echo Failed to detect Windows build number.
+echo No se pudo detectar el número de compilación de Windows.
 echo:
 setlocal EnableDelayedExpansion
 set fixes=%fixes% %mas%troubleshoot
@@ -147,8 +147,8 @@ goto dk_done
 if exist "%Systemdrive%\Users\WDAGUtilityAccount" (
 sc query gcs | find /i "RUNNING" %nul% && (
 %eline%
-echo Windows Sandbox detected; activation is not supported.
-echo The script cannot run due to missing licensing components. Aborting...
+echo Se detectó Windows Sandbox; la activación no es compatible.
+echo El script no puede ejecutarse debido a la falta de componentes de licencia. Cancelando...
 echo:
 goto dk_done
 )
@@ -157,10 +157,10 @@ goto dk_done
 if %winbuild% LSS 6001 (
 %nceline%
 echo Unsupported OS version detected [%winbuild%].
-echo MAS only supports Windows Vista/7/8/8.1/10/11 and their Server equivalents.
+echo MAS solo soporta Windows Vista/7/8/8.1/10/11 y sus equivalentes de servidor.
 if %winbuild% EQU 6000 (
 echo:
-echo Windows Vista RTM is not supported because Powershell cannot be installed.
+echo Windows Vista RTM no es compatible porque PowerShell no puede ser instalado.
 echo Upgrade to Windows Vista SP1 or SP2.
 )
 goto dk_done
@@ -169,7 +169,7 @@ goto dk_done
 if %winbuild% LSS 7600 if not exist "%SysPath%\WindowsPowerShell\v1.0\Modules" (
 %nceline%
 if not exist %ps% (
-echo PowerShell is not installed in your system.
+echo PowerShell no está instalado en su sistema.
 )
 echo Install PowerShell 2.0 using the following URL.
 echo:
@@ -200,10 +200,10 @@ setlocal EnableDelayedExpansion
 echo "!_batf!" | find /i "!_ttemp!" %nul1% && (
 if /i not "!_work!"=="!_ttemp!" (
 %eline%
-echo The script was launched from the temp folder.
-echo You are most likely running the script directly from the archive file.
+echo El script fue lanzado desde la carpeta temporal.
+echo Es probable que esté ejecutando el script directamente desde el archivo de archivo.
 echo:
-echo Extract the archive file and launch the script from the extracted folder.
+echo Extraiga el archivo de archivo y ejecute el script desde la carpeta extraída.
 goto dk_done
 )
 )
@@ -215,8 +215,8 @@ goto dk_done
 %nul1% fltmc || (
 if not defined _elev %psc% "start cmd.exe -arg '/c \"!_PSarg!\"' -verb runas" && exit /b
 %eline%
-echo This script needs admin rights.
-echo Right click on this script and select 'Run as administrator'.
+echo Este script necesita derechos de administrador.
+echo Haga clic con el botón derecho en este script y seleccione 'Ejecutar como administrador'.
 goto dk_done
 )
 
@@ -238,8 +238,8 @@ echo:
 REM check LanguageMode
 
 echo: !tstresult2! | findstr /i "ConstrainedLanguage RestrictedLanguage NoLanguage" %nul1% && (
-echo FullLanguage mode not found in PowerShell. Aborting...
-echo If you have applied restrictions on Powershell then undo those changes.
+echo FullLanguage mode not found in PowerShell. Cancelando...
+echo Si ha aplicado restricciones en PowerShell, deshaga esos cambios.
 echo:
 set fixes=%fixes% %mas%fix_powershell
 call :dk_color2 %Blue% "Check this webpage for help - " %_Yellow% " %mas%fix_powershell"
@@ -249,7 +249,7 @@ goto dk_done
 REM check Powershell core version
 
 cmd /c "%psc% "$PSVersionTable.PSEdition"" | find /i "Core" %nul1% && (
-echo Windows Powershell is needed for MAS but it seems to be replaced with Powershell core. Aborting...
+echo Windows Powershell es necesario para MAS pero parece que ha sido reemplazado con Powershell core. Cancelando...
 echo:
 set fixes=%fixes% %mas%in-place_repair_upgrade
 call :dk_color2 %Blue% "Check this webpage for help - " %_Yellow% " %mas%in-place_repair_upgrade"
@@ -260,7 +260,7 @@ REM check for Mal-ware that may cause issues with Powershell
 
 for /r "%ProgramFiles%\" %%f in (secureboot.exe) do if exist "%%f" (
 echo "%%f"
-echo Mal%blank%ware found, PowerShell is not working properly.
+echo Mal%blank%ware encontrado, PowerShell no está funcionando correctamente.
 echo:
 set fixes=%fixes% %mas%remove_mal%w%ware
 call :dk_color2 %Blue% "Check this webpage for help - " %_Yellow% " %mas%remove_mal%w%ware"
@@ -272,7 +272,7 @@ REM check if .NET is working properly
 if /i "!tstresult2!"=="FullLanguage" (
 cmd /c "%psc% ""try {[System.AppDomain]::CurrentDomain.GetAssemblies(); [System.Math]::Sqrt(144)} catch {Exit 3}""" %nul%
 if !errorlevel!==3 (
-echo Windows Powershell failed to load .NET command. Aborting...
+echo Windows Powershell no pudo cargar el comando .NET. Cancelando...
 echo:
 set fixes=%fixes% %mas%in-place_repair_upgrade
 call :dk_color2 %Blue% "Check this webpage for help - " %_Yellow% " %mas%in-place_repair_upgrade"
@@ -282,14 +282,14 @@ goto dk_done
 
 REM check antivirus and other errors
 
-echo PowerShell is not working properly. Aborting...
+echo PowerShell no está funcionando correctamente. Cancelando...
 
 if /i "!tstresult2!"=="FullLanguage" (
 echo:
-echo Your antivirus software might be blocking the script.
+echo Su software de antivirus puede estar bloqueando el script.
 echo:
 sc query sense | find /i "RUNNING" %nul% && (
-echo Installed Antivirus - Microsoft Defender for Endpoint
+echo Antivirus instalado - Microsoft Defender for Endpoint
 )
 cmd /c "%psc% ""$av = Get-WmiObject -Namespace root\SecurityCenter2 -Class AntiVirusProduct; $n = @(); foreach ($i in $av) { $n += $i.displayName }; if ($n) { Write-Host ('Installed Antivirus - ' + ($n -join ', '))}"""
 )
@@ -367,11 +367,11 @@ if not "%%C"=="" set old=
 if defined old (
 echo ________________________________________________
 %eline%
-echo Your version of MAS [%masver%] is outdated.
+echo Su versión de MAS [%masver%] está desactualizada.
 echo ________________________________________________
 echo:
 if not %_unattended%==1 (
-echo [1] Get Latest MAS
+echo [1] Obtener la última MAS
 echo [0] Continue Anyway
 echo:
 call :dk_color %_Green% "Choose a menu option using your keyboard [1,0] :"
@@ -413,7 +413,7 @@ setlocal EnableDelayedExpansion
 
 if not defined desktop (
 %eline%
-echo Unable to detect Desktop location, aborting...
+echo No se puede detectar la ubicación de la escritorio, cancelando...
 goto dk_done
 )
 
@@ -451,12 +451,12 @@ echo:
 echo:
 echo:
 if %winbuild% GEQ 10240 if %winbuild% LEQ 19045 if not defined _serexist if not defined _evalexist if not defined _ltscexist (
-call :dk_color2 %_Green% "       Tip:" %_White% " To activate ESU updates after W10 EOL, use TSforge option."
+call :dk_color2 %_Green% "       Tip:" %_White% " Para activar las actualizaciones ESU después de la EOL de W10, use la opción TSforge."
 )
 echo:
 echo:       ______________________________________________________________
 echo:
-echo:                 Activation Methods:
+echo:                 Métodos de activación:
 echo:
 rem if defined _hwidgo (
 rem call :dk_color3 %_White% "             [1] " %_Green% "HWID" %_White% "                - Windows"
@@ -466,7 +466,7 @@ rem )
 if defined _ohookgo (
 call :dk_color3 %_White% "             [2] " %_Green% "Ohook" %_White% "               - Office"
 ) else (
-echo:             [2] Ohook               - Office
+echo:             [2] Activación de Office   - Office Permanente 2021 -2024
 )
 rem if defined _tsforgego (
 rem call :dk_color3 %_White% "             [3] " %_Green% "TSforge" %_White% "             - Windows / Office / ESU"
@@ -485,10 +485,10 @@ rem echo:
 rem echo:             [9] Troubleshoot
 rem echo:             [E] Extras
 rem echo:             [H] Help
-echo:             [0] Exit
+echo:             [0] Salir
 echo:       ______________________________________________________________
 echo:
-call :dk_color2 %_White% "         " %_Green% "Choose a menu option using your keyboard [1,2,3...E,H,0] :"
+call :dk_color2 %_White% "         " %_Green% " Tienes 1 minuto para Activar tu Office "
 choice /C:123456789EH0 /N
 set _erl=%errorlevel%
 
@@ -573,11 +573,11 @@ echo:
 echo:
 echo:
 echo:
-echo:                     Extract $OEM$ folder on the desktop           
+echo:                     Extraer la carpeta $OEM$ en el escritorio           
 echo:         ____________________________________________________________
 echo:
 rem echo:            [1] HWID             [Windows]
-echo:            [2] Ohook            [Office]
+echo:            [2] Activación de Office   [Office Permanente 2021 -2024]
 rem echo:            [3] TSforge          [Windows / ESU / Office]
 rem echo:            [4] KMS38            [Windows]
 rem echo:            [5] Online KMS       [Windows / Office]
@@ -586,11 +586,11 @@ rem echo:            [6] HWID    [Windows] ^+ Ohook [Office]
 rem echo:            [7] HWID    [Windows] ^+ Ohook [Office] ^+ TSforge [ESU]
 rem echo:            [8] TSforge [Windows] ^+ Online KMS [Office]
 echo:
-call :dk_color2 %_White% "            [R] " %_Green% "ReadMe"
-echo:            [0] Go Back
+rem call :dk_color2 %_White% "            [R] " %_Green% "ReadMe"
+echo:            [0] Volver
 echo:         ____________________________________________________________
 echo:  
-call :dk_color2 %_White% "             " %_Green% "Choose a menu option using your keyboard :"
+call :dk_color2 %_White% "             " %_Green% "Activa tu Office Permanente 2021 -2024"
 choice /C:12345678R0 /N
 set _erl=%errorlevel%
 
@@ -2524,26 +2524,26 @@ if %_rem%==1 goto :oh_uninstall
 if %_unattended%==0 (
 cls
 if not defined terminal mode 76, 25
-title  Ohook Activation %masver%
+title  Activación de Office Permanente 2021 -2024 %masver%
 call :oh_checkapps
 echo:
 echo:
 echo:
 echo:
-if defined checknames (call :dk_color %_Yellow% "                Close [!checknames!] before proceeding...")
+if defined checknames (call :dk_color %_Yellow% "                Cerrar [!checknames!] antes de proceder...")
 echo         ____________________________________________________________
 echo:
-echo                 [1] Install Ohook Office Activation
+echo                 [1] Instalar Activación de Office Permanente 2021 -2024
 echo:
-echo                 [2] Uninstall Ohook
+rem echo                 [2] Uninstall Ohook
 echo                 ____________________________________________
-echo:
-echo                 [3] Download Office
+rem echo:
+rem echo                 [3] Download Office
 echo:
 echo                 [0] %_exitmsg%
 echo         ____________________________________________________________
 echo: 
-call :dk_color2 %_White% "             " %_Green% "Choose a menu option using your keyboard [1,2,3,0]"
+call :dk_color2 %_White% "             " %_Green% "Activacion Office Permanente 2021 -2024"
 choice /C:1230 /N
 set _el=!errorlevel!
 if !_el!==4  exit /b
