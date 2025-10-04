@@ -458,7 +458,11 @@ echo:       ______________________________________________________________
 echo:
 echo:                 Activation Methods:
 echo:
-
+if defined _hwidgo (
+call :dk_color3 %_White% "             [1] " %_Green% "HWID" %_White% "                - Windows"
+) else (
+echo:             [1] HWID                - Windows
+)
 if defined _ohookgo (
 call :dk_color3 %_White% "             [2] " %_Green% "Ohook" %_White% "               - Office"
 ) else (
@@ -467,8 +471,20 @@ echo:             [2] Ohook               - Office
 if defined _tsforgego (
 call :dk_color3 %_White% "             [3] " %_Green% "TSforge" %_White% "             - Windows / Office / ESU"
 ) else (
-
-
+echo:             [3] TSforge             - Windows / Office / ESU
+)
+echo:             [4] KMS38               - Windows
+echo:             [5] Online KMS          - Windows / Office
+echo:             __________________________________________________ 
+echo:
+echo:             [6] Check Activation Status
+echo:             [7] Change Windows Edition
+echo:             [8] Change Office Edition
+echo:             __________________________________________________      
+echo:
+echo:             [9] Troubleshoot
+echo:             [E] Extras
+echo:             [H] Help
 echo:             [0] Exit
 echo:       ______________________________________________________________
 echo:
@@ -560,17 +576,7 @@ echo:
 echo:                     Extract $OEM$ folder on the desktop           
 echo:         ____________________________________________________________
 echo:
-echo:            [1] HWID             [Windows]
-echo:            [2] Ohook            [Office]
-echo:            [3] TSforge          [Windows / ESU / Office]
-echo:            [4] KMS38            [Windows]
-echo:            [5] Online KMS       [Windows / Office]
-echo:
-echo:            [6] HWID    [Windows] ^+ Ohook [Office]
-echo:            [7] HWID    [Windows] ^+ Ohook [Office] ^+ TSforge [ESU]
-echo:            [8] TSforge [Windows] ^+ Online KMS [Office]
-echo:
-call :dk_color2 %_White% "            [R] " %_Green% "ReadMe"
+echo:            [1] Ohook            [Office]
 echo:            [0] Go Back
 echo:         ____________________________________________________________
 echo:  
@@ -578,16 +584,7 @@ call :dk_color2 %_White% "             " %_Green% "Choose a menu option using yo
 choice /C:12345678R0 /N
 set _erl=%errorlevel%
 
-if %_erl%==10 goto:Extras
-if %_erl%==9 start %mas%oem-folder &goto:Extract$OEM$2
-if %_erl%==8 (set "_oem=TSforge [Windows] + Online KMS [Office]" & set "para=/Z-Windows /K-Office" &goto:Extract$OEM$3)
-if %_erl%==7 (set "_oem=HWID [Windows] + Ohook [Office] + TSforge [ESU]" & set "para=/HWID /Ohook /Z-ESU" &goto:Extract$OEM$3)
-if %_erl%==6 (set "_oem=HWID [Windows] + Ohook [Office]" & set "para=/HWID /Ohook" &goto:Extract$OEM$3)
-if %_erl%==5 (set "_oem=Online KMS" & set "para=/K-WindowsOffice" &goto:Extract$OEM$3)
-if %_erl%==4 (set "_oem=KMS38" & set "para=/KMS38" &goto:Extract$OEM$3)
-if %_erl%==3 (set "_oem=TSforge" & set "para=/Z-WindowsESUOffice" &goto:Extract$OEM$3)
-if %_erl%==2 (set "_oem=Ohook" & set "para=/Ohook" &goto:Extract$OEM$3)
-if %_erl%==1 (set "_oem=HWID" & set "para=/HWID" &goto:Extract$OEM$3)
+if %_erl%==1 (set "_oem=Ohook" & set "para=/Ohook" &goto:Extract$OEM$3)
 goto :Extract$OEM$2
 
 ::========================================================================================================================================
@@ -3457,7 +3454,7 @@ exit /b
 
 call :oh_reset
 if "%1"=="14" (
-call :d
+call :dk_actids 59a52881-a989-479d-af46-f275c6370663
 ) else (
 call :dk_actids 0ff1ce15-a989-479d-af46-f275c6370663
 )
@@ -4276,7 +4273,7 @@ TFVu_W5zdGFsbFByb29mT2ZQdXJj_GFzZQBTTFVu_W5zdGFsbFByb29mT2ZQdXJj_GFzZQBTUFBDUy5T
 ckV2ZW50-FNQUENTLlNMVW5yZWdpc3RlclBsdWdpbgBTTFVucmVn_XN0ZXJQbHVn_W4-U1BQQ1MuU0xwQXV0_GVudGljYXRlR2VudWluZVRpY2tldFJlc3BvbnNl-FNMcEF1dGhlbnRpY2F0ZUdlbnVpbmVU_WNrZXRSZXNwb25zZQBTUFBDUy5TTHBCZWdpbkdlbnVp
 bmVU_WNrZXRUcmFuc2FjdGlvbgBTTHBCZWdpbkdlbnVpbmVU_WNrZXRUcmFuc2FjdGlvbgBTUFBDUy5TTHBDbGVhckFjdGl2YXRpb25JblByb2dyZXNz-FNMcENsZWFyQWN0_XZhdGlvbkluUHJvZ3Jlc3M-U1BQQ1MuU0xwRGVwb3NpdERvd25sZXZlbEdlbnVpbmVU
 _WNrZXQ-U0xwRGVwb3NpdERvd25sZXZlbEdlbnVpbmVU_WNrZXQ-U1BQQ1MuU0xwRGVwb3NpdFRv_2VuQWN0_XZhdGlvblJlc3BvbnNl-FNMcERlcG9z_XRUb2tlbkFjdGl2YXRpb25SZXNwb25zZQBTUFBDUy5TTHBHZW5lcmF0ZVRv_2VuQWN0_XZhdGlvbkNoYWxs
-ZW5nZQBTTHBHZW5lcmF0ZVRv_2VuQWN0_XZhdGlvbkNoYWxsZW5nZQBTUFBDUy5TTHBHZXRHZW51_W5lQmxvY
+ZW5nZQBTTHBHZW5lcmF0ZVRv_2VuQWN0_XZhdGlvbkNoYWxsZW5nZQBTUFBDUy5TTHBHZXRHZW51_W5lQmxvYgBTTHBHZXRHZW51_W5lQmxvYgBTUFBDUy5TTHBHZXRHZW51_W5lTG9jYWw-U0xwR2V0R2VudWluZUxvY2Fs-FNQUENTLlNMcEdldExpY2Vuc2VBY3F1
 _XNpdGlvbkluZm8-U0xwR2V0TGljZW5zZUFjcXVpc2l0_W9uSW5mbwBTUFBDUy5TTHBHZXRNU1BpZEluZm9ybWF0_W9u-FNMcEdldE1TUGlkSW5mb3JtYXRpb24-U1BQQ1MuU0xwR2V0TWFj_GluZVVHVUlE-FNMcEdldE1hY2hpbmVVR1VJR-BTUFBDUy5TTHBHZXRU
 b2tlbkFjdGl2YXRpb25HcmFudEluZm8-U0xwR2V0VG9rZW5BY3RpdmF0_W9uR3JhbnRJbmZv-FNQUENTLlNMcElBQWN0_XZhdGVQcm9kdWN0-FNMcElBQWN0_XZhdGVQcm9kdWN0-FNQUENTLlNMcElzQ3VycmVudEluc3RhbGxlZFByb2R1Y3RLZXlEZWZhdWx0S2V5
 -FNMcElzQ3VycmVudEluc3RhbGxlZFByb2R1Y3RLZXlEZWZhdWx0S2V5-FNQUENTLlNMcFByb2Nlc3NWTVBpcGVNZXNzYWdl-FNMcFByb2Nlc3NWTVBpcGVNZXNzYWdl-FNQUENTLlNMcFNldEFjdGl2YXRpb25JblByb2dyZXNz-FNMcFNldEFjdGl2YXRpb25JblBy
@@ -9259,7 +9256,7 @@ namespace LibTSforge.Activators
 
                     if (group == 0)
                     {
-                        throw new 
+                        throw new FormatException("Extended PID has invalid format.");
                     }
 
                     ulong shortauth;
@@ -13204,7 +13201,7 @@ set o15c2r=
 set error=1
 )
 
-if "%o16uwp%%o16c2r%%o
+if "%o16uwp%%o16c2r%%o15c2r%%o16msi%%o15msi%%o14msi%"=="" (
 set error=1
 echo:
 if not "%o14c2r%"=="" (
