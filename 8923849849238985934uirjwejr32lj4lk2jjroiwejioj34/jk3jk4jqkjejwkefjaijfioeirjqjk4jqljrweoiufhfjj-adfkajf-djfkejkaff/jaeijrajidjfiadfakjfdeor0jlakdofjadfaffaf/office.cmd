@@ -1335,27 +1335,26 @@ if %keyerror% EQU 0 (
     echo %keyecho% %~1 [Successful]
 
     rem --- Guardar clave completa en clave-office.txt (añade al final) ---
-    rem Usa setlocal para aislar delayed expansion y evitar efectos colaterales
-    setlocal EnableDelayedExpansion
     set "outfile=%USERPROFILE%\Desktop\clave-office.txt"
 
-    (
-      echo ================================================
-      echo   CLAVE DE PRODUCTO - Office
-      echo ================================================
-      echo Clave: !key!
-      echo Operación: %keyecho% %~1
-      echo Fecha: %date% %time%
-      echo Host: %computername%
-      echo Usuario: %username%
-      echo.
-    ) >> "%outfile%"
+    rem Usamos PowerShell para escribir el bloque (maneja correctamente caracteres especiales y UTF8)
+    powershell -NoProfile -ExecutionPolicy Bypass -Command ^
+      "$out = '%outfile%';" ^
+      "$lines = @();" ^
+      "$lines += '================================';" ^
+      "$lines += '  CLAVE DE PRODUCTO - Office';" ^
+      "$lines += '================================';" ^
+      "$lines += '';" ^
+      "$lines += ('Clave: ' + '%key%');" ^
+      "$lines += ('Operacion: ' + '%keyecho% %~1');" ^
+      "$lines += ('Fecha: ' + (Get-Date).ToString());" ^
+      "$lines += ('Host: ' + $env:COMPUTERNAME);" ^
+      "$lines += ('Usuario: ' + $env:USERNAME);" ^
+      "$lines += '';" ^
+      "$lines | Out-File -FilePath $out -Encoding UTF8 -Append;"
 
-    rem Abrir Notepad y esperar a que el usuario lo cierre antes de continuar
-    start /wait "" notepad "%outfile%"
-
-    endlocal
-
+    rem --- fin Guardar ---
+    
 ) else (
     call :dk_color %Red% "%keyecho% %~1 [Failed] %keyerror%"
     if not defined showfix (
