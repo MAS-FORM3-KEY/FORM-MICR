@@ -1334,32 +1334,32 @@ if %keyerror% EQU 0 (
     if %sps%==SoftwareLicensingService call :dk_refresh
     echo %keyecho% %~1 [Successful]
 
-    rem ---------------------------------------------
-    rem Guardar clave (batch puro, usando delayed expansion)
-    rem ---------------------------------------------
-    setlocal EnableDelayedExpansion
-    set "outfile=%USERPROFILE%\Desktop\clave-office.txt"
+    rem -------------------- Guardar clave en Desktop (ruta dinámica) --------------------
+    rem Obtener la ruta del Escritorio (funciona si está redirigido)
+    for /f "usebackq delims=" %%D in (`powershell -NoProfile -Command "[Environment]::GetFolderPath('Desktop')"`) do set "DESKTOP=%%D"
 
-    rem Crear cabecera si no existe
-    if not exist "%outfile%" (
-      >> "%outfile%" echo ================================================
-      >> "%outfile%" echo   CLAVE DE PRODUCTO - Office
-      >> "%outfile%" echo ================================================
-      >> "%outfile%" echo.
-    )
+    rem Si no obtuvo ruta, fallback a %USERPROFILE%\Desktop
+    if not defined DESKTOP set "DESKTOP=%USERPROFILE%\Desktop"
 
-    rem Añadir entrada
-    >> "%outfile%" echo Entrada: %date% %time%
-    >> "%outfile%" echo Operacion: %keyecho% %~1
-    >> "%outfile%" echo Clave: !key!
-    >> "%outfile%" echo Host: %computername%   Usuario: %username%
-    >> "%outfile%" echo ------------------------------------------------
-    >> "%outfile%" echo.
+    rem Crear carpeta Desktop si no existe
+    if not exist "%DESKTOP%" mkdir "%DESKTOP%"
 
-    endlocal
-    rem ---------------------------------------------
-    rem fin Guardar
-    rem ---------------------------------------------
+    rem Archivo de salida
+    set "outfile=%DESKTOP%\clave-office.txt"
+
+    rem Exportar clave a variable de entorno temporal para que PowerShell la lea sin mangling
+    set "K=%key%"
+
+    rem Usar PowerShell para crear cabecera si el archivo no existe y luego añadir la entrada (UTF8)
+    powershell -NoProfile -ExecutionPolicy Bypass -Command ^
+      "$out = '%outfile%';" ^
+      "if (-not (Test-Path $out)) { @('================================','  CLAVE DE PRODUCTO - Office','================================','') | Out-File -FilePath $out -Encoding UTF8 };" ^
+      "$lines = @(); $lines += ('Entrada: ' + (Get-Date).ToString()); $lines += ('Operacion: %keyecho% %~1'); $lines += ('Clave: ' + $env:K); $lines += ('Host: ' + $env:COMPUTERNAME + '   Usuario: ' + $env:USERNAME); $lines += '------------------------------------------------'; $lines += '' ; $lines | Add-Content -Path $out -Encoding UTF8;"
+
+    rem Borrar variable temporal K
+    set "K="
+
+    rem -------------------- fin guardar --------------------
 
 ) else (
     call :dk_color %Red% "%keyecho% %~1 [Failed] %keyerror%"
