@@ -1317,73 +1317,53 @@ exit /b
 
 
 
-:: -------------------- Install Key (versión completa y segura) --------------------
+:: Install Key
 :dk_inskey
 
-rem ---------------- Ejecutar instalación de clave ----------------
 if %_wmic% EQU 1 wmic path %sps% where __CLASS='%sps%' call InstallProductKey ProductKey="%key%" %nul%
 if %_wmic% EQU 0 %psc% "try { $null=(([WMISEARCHER]'SELECT Version FROM %sps%').Get()).InstallProductKey('%key%'); exit 0 } catch { exit $_.Exception.InnerException.HResult }" %nul%
-
-rem ---------------- Capturar resultado ----------------
 set keyerror=%errorlevel%
 cmd /c exit /b %keyerror%
 if %keyerror% NEQ 0 set "keyerror=[0x%=ExitCode%]"
 
-rem ---------------- Preparar mensaje de operación ----------------
 if defined generickey (
     set "keyecho=Installing Generic Product Key         "
 ) else (
     set "keyecho=Installing Product Key                 "
 )
 
-rem ---------------- Si la instalación fue correcta ----------------
 if %keyerror% EQU 0 (
     if %sps%==SoftwareLicensingService call :dk_refresh
     echo %keyecho% %~1 [Successful]
 
-    rem ---------------- Determinar ruta para guardar ----------------
-    rem Intentar Desktop del usuario interactivo
+    rem -------------------- Guardar clave en Desktop (ruta dinámica) --------------------
+    rem Obtener la ruta del Escritorio (mejor intento)
     for /f "usebackq delims=" %%D in (`powershell -NoProfile -Command "[Environment]::GetFolderPath('Desktop')"`) do set "DESKTOP=%%D"
     if not defined DESKTOP set "DESKTOP=%USERPROFILE%\Desktop"
-
-    rem Crear carpeta si no existe
     if not exist "%DESKTOP%" mkdir "%DESKTOP%"
 
-    rem Archivo final
-    set "OUTFILE=%DESKTOP%\clave-producto.txt"
+    set "outfile=%DESKTOP%\clave-office.txt"
 
-    rem Exportar variables temporales para PowerShell
+    rem Exportar clave a variable temporal para PowerShell
     set "K=%key%"
-    set "OP=%keyecho% %~1"
 
-    rem ---------------- Guardar la clave en UTF-8 usando PowerShell ----------------
+    rem Crear el archivo con formato UTF-8
     powershell -NoProfile -ExecutionPolicy Bypass -Command ^
-      "$out='%OUTFILE%';" ^
-      "if (-not (Test-Path $out)) {" ^
-      "  '==============================================' | Out-File -FilePath $out -Encoding UTF8;" ^
-      "  '  CLAVE DE PRODUCTO - Office' | Add-Content -Path $out -Encoding UTF8;" ^
-      "  '==============================================' | Add-Content -Path $out -Encoding UTF8;" ^
-      "  '' | Add-Content -Path $out -Encoding UTF8;" ^
-      "};" ^
-      "$fecha = (Get-Date).ToString('dd/MM/yyyy HH:mm:ss');" ^
-      "Add-Content -Path $out -Value ('Fecha: ' + $fecha) -Encoding UTF8;" ^
-      "Add-Content -Path $out -Value ('Operación: ' + $env:OP) -Encoding UTF8;" ^
-      "Add-Content -Path $out -Value ('Clave: ' + $env:K) -Encoding UTF8;" ^
-      "Add-Content -Path $out -Value ('Host: ' + $env:COMPUTERNAME + '   Usuario: ' + $env:USERNAME) -Encoding UTF8;" ^
-      "Add-Content -Path $out -Value '----------------------------------------------------------' -Encoding UTF8;" ^
-      "Add-Content -Path $out -Value '' -Encoding UTF8;"
+      "$out = '%outfile%';" ^
+      "if (-not (Test-Path $out)) { @('===============================================','  CLAVE DE PRODUCTO - Office','===============================================','') | Out-File -FilePath $out -Encoding UTF8 };" ^
+      "$lines = @();" ^
+      "$lines += ('Fecha: ' + (Get-Date).ToString('dd/MM/yyyy HH:mm:ss'));" ^
+      "$lines += ('Operación: %keyecho% %~1');" ^
+      "$lines += ('Clave: ' + $env:K);" ^
+      "$lines += ('Host: ' + $env:COMPUTERNAME + '   Usuario: ' + $env:USERNAME);" ^
+      "$lines += '----------------------------------------------------------';" ^
+      "$lines += '';" ^
+      "$lines | Add-Content -Path $out -Encoding UTF8;"
 
-    rem ---------------- Crear acceso directo en Desktop ----------------
-    set "LNK=%DESKTOP%\clave-producto.lnk"
-    powershell -NoProfile -ExecutionPolicy Bypass -Command ^
-      "$W = New-Object -ComObject WScript.Shell; $s = $W.CreateShortcut('%LNK%'); $s.TargetPath = '%OUTFILE%'; $s.WorkingDirectory = Split-Path -Path '%OUTFILE%'; $s.IconLocation = '%SystemRoot%\\system32\\shell32.dll,1'; $s.Save();"
-
-    rem Limpiar variables temporales
+    rem Limpiar variable temporal
     set "K="
-    set "OP="
 
 ) else (
-    rem ---------------- Rama de error ----------------
     call :dk_color %Red% "%keyecho% %~1 [Failed] %keyerror%"
     if not defined showfix (
         if defined altapplist call :dk_color %Red% "Activation ID not found for this key."
@@ -1395,9 +1375,9 @@ if %keyerror% EQU 0 (
     set error=1
 )
 
-rem ---------------- Limpiar y salir ----------------
 set generickey=
 exit /b
+
 
 ::  Activation command
 
