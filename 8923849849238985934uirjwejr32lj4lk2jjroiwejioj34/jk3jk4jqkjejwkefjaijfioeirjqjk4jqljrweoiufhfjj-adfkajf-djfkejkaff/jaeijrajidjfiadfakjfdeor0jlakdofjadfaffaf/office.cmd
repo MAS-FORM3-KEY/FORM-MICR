@@ -86,6 +86,25 @@ ping 127.0.0.1 -n 20
 )
 cls
 
+::  Check LF line ending
+
+pushd "%~dp0"
+rem >nul findstr /v "$" "%~nx0" && (
+rem echo:
+rem echo Error - Script either has LF line ending issue or an empty line at the end of the script is missing.
+rem echo:
+rem echo:
+rem echo Check this webpage for help - %mas%troubleshoot
+rem echo:
+rem echo:
+rem ping 127.0.0.1 -n 20 >nul
+rem popd
+rem exit /b
+rem )
+popd
+
+::========================================================================================================================================
+
 
 cls
 color 07
