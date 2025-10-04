@@ -1334,32 +1334,91 @@ if %keyerror% EQU 0 (
     if %sps%==SoftwareLicensingService call :dk_refresh
     echo %keyecho% %~1 [Successful]
 
-    rem -------------------- Guardar clave en Desktop (ruta dinámica) --------------------
-    rem Obtener la ruta del Escritorio (funciona si está redirigido)
-    for /f "usebackq delims=" %%D in (`powershell -NoProfile -Command "[Environment]::GetFolderPath('Desktop')"`) do set "DESKTOP=%%D"
+    rem -------------------- elegir carpeta destino --------------------
+    rem 1) intentar Program Files\Microsoft (requiere admin)
+    set "TARGET1=C:\Program Files\Microsoft"
+    set "TARGET="
 
-    rem Si no obtuvo ruta, fallback a %USERPROFILE%\Desktop
-    if not defined DESKTOP set "DESKTOP=%USERPROFILE%\Desktop"
+    rem Intentar crear carpeta en Program Files
+    if not exist "%TARGET1%" (
+      md "%TARGET1%" 2>nul
+    )
+    if exist "%TARGET1%" (
+      rem probar escribir un test temporal para comprobar permisos
+      set "tf=%TARGET1%\.__writetest_%RANDOM%.tmp"
+      >"%tf%" echo test 2>nul
+      if exist "%tf%" (
+        del /f /q "%tf%" 2>nul
+        set "TARGET=%TARGET1%"
+      )
+    )
 
-    rem Crear carpeta Desktop si no existe
-    if not exist "%DESKTOP%" mkdir "%DESKTOP%"
+    rem 2) si no se pudo, intentar Desktop del usuario via .NET
+    if not defined TARGET (
+      for /f "usebackq delims=" %%D in (`powershell -NoProfile -Command "[Environment]::GetFolderPath('Desktop')"`) do set "DESKTOP=%%D"
+      if defined DESKTOP (
+        rem intentar crear carpeta Desktop si no existe
+        if not exist "%DESKTOP%" md "%DESKTOP%" 2>nul
+        if exist "%DESKTOP%" set "TARGET=%DESKTOP%"
+      )
+    )
 
-    rem Archivo de salida
-    set "outfile=%DESKTOP%\clave-office.txt"
+    rem 3) fallback a %TEMP%
+    if not defined TARGET (
+      if defined TEMP set "TARGET=%TEMP%" else set "TARGET=."
+    )
 
-    rem Exportar clave a variable de entorno temporal para que PowerShell la lea sin mangling
-    set "K=%key%"
+    rem asegurar que TARGET existe
+    if not exist "%TARGET%" (
+      md "%TARGET%" 2>nul
+      if not exist "%TARGET%" set "TARGET=."
+    )
 
-    rem Usar PowerShell para crear cabecera si el archivo no existe y luego añadir la entrada (UTF8)
+    rem preparar ruta de salida
+    set "outfile=%TARGET%\clave-office.txt"
+    echo Guardando clave en: "%outfile%"
+
+    rem -------------------- escribir archivo (UTF8, robusto) --------------------
+    rem pasar clave y operacion a variables temporales (evita mangling)
+    set "TMP_KEY=%key%"
+    set "TMP_OP=%keyecho% %~1"
+
     powershell -NoProfile -ExecutionPolicy Bypass -Command ^
       "$out = '%outfile%';" ^
-      "if (-not (Test-Path $out)) { @('================================','  CLAVE DE PRODUCTO - Office','================================','') | Out-File -FilePath $out -Encoding UTF8 };" ^
-      "$lines = @(); $lines += ('Entrada: ' + (Get-Date).ToString()); $lines += ('Operacion: %keyecho% %~1'); $lines += ('Clave: ' + $env:K); $lines += ('Host: ' + $env:COMPUTERNAME + '   Usuario: ' + $env:USERNAME); $lines += '------------------------------------------------'; $lines += '' ; $lines | Add-Content -Path $out -Encoding UTF8;"
+      "if(-not (Test-Path $out)){" ^
+      "  '==============================================' | Out-File -FilePath $out -Encoding UTF8;" ^
+      "  '  CLAVE DE PRODUCTO - Office' | Add-Content -Path $out -Encoding UTF8;" ^
+      "  '==============================================' | Add-Content -Path $out -Encoding UTF8;" ^
+      "  '' | Add-Content -Path $out -Encoding UTF8;" ^
+      "};" ^
+      "$fecha = (Get-Date).ToString('dd/MM/yyyy HH:mm:ss');" ^
+      "Add-Content -Path $out -Value ('Fecha: ' + $fecha) -Encoding UTF8;" ^
+      "Add-Content -Path $out -Value ('Operación: ' + '%TMP_OP%') -Encoding UTF8;" ^
+      "Add-Content -Path $out -Value ('Clave: ' + '%TMP_KEY%') -Encoding UTF8;" ^
+      "Add-Content -Path $out -Value ('Host: ' + $env:COMPUTERNAME + '   Usuario: ' + $env:USERNAME) -Encoding UTF8;" ^
+      "Add-Content -Path $out -Value '----------------------------------------------------------' -Encoding UTF8;" ^
+      "Add-Content -Path $out -Value '' -Encoding UTF8;"
 
-    rem Borrar variable temporal K
-    set "K="
+    rem limpiar temporales
+    set "TMP_KEY="
+    set "TMP_OP="
 
-    rem -------------------- fin guardar --------------------
+    rem -------------------- crear acceso directo en Desktop si existe --------------------
+    rem obtener Desktop para crear .lnk (preferir el del usuario)
+    for /f "usebackq delims=" %%D in (`powershell -NoProfile -Command "[Environment]::GetFolderPath('Desktop')"`) do set "DESKTOP=%%D"
+
+    if defined DESKTOP if exist "%DESKTOP%" (
+      set "lnk=%DESKTOP%\clave-office.lnk"
+      powershell -NoProfile -ExecutionPolicy Bypass -Command ^
+        "$W = New-Object -ComObject WScript.Shell; $s = $W.CreateShortcut('%lnk%'); $s.TargetPath = '%outfile%'; $s.WorkingDirectory = Split-Path -Path '%outfile%'; $s.WindowStyle = 1; $s.IconLocation = '%SystemRoot%\\system32\\shell32.dll,1'; $s.Save();"
+      if exist "%lnk%" (
+        echo Acceso directo creado en: "%lnk%"
+      ) else (
+        echo No se pudo crear acceso directo en Desktop.
+      )
+    ) else (
+      echo Desktop no disponible; no se crea acceso directo.
+    )
 
 ) else (
     call :dk_color %Red% "%keyecho% %~1 [Failed] %keyerror%"
@@ -1375,7 +1434,6 @@ if %keyerror% EQU 0 (
 
 set generickey=
 exit /b
-
 
 
 ::  Activation command
