@@ -107,7 +107,7 @@ popd
 
 cls
 color 07
-title  Microsoft_Activation_Scripts_SUSHELL %masver%
+title  Microsoft_Office_Permanente_2024 %masver%
 
 set _args=
 set _elev=
@@ -464,9 +464,9 @@ rem ) else (
 rem echo:             [1] HWID                - Windows
 rem )
 if defined _ohookgo (
-call :dk_color3 %_White% "             [2] " %_Green% "Ohook" %_White% "               - Office"
+call :dk_color3 %_White% "             [1] " %_Green% "Licencia Permanente" %_White% "               - Office 2024"
 ) else (
-echo:             [2] Activación de Office   - Office Permanente 2021 -2024
+echo:             [1] Activación de Office   - Office Permanente 2024
 )
 rem if defined _tsforgego (
 rem call :dk_color3 %_White% "             [3] " %_Green% "TSforge" %_White% "             - Windows / Office / ESU"
@@ -502,7 +502,7 @@ rem if %_erl%==6 setlocal & call :check_actstatus   & cls & endlocal & goto :Mai
 rem if %_erl%==5 setlocal & call :KMSActivation     & cls & endlocal & goto :MainMenu
 rem if %_erl%==4 setlocal & call :KMS38Activation   & cls & endlocal & goto :MainMenu
 rem if %_erl%==3 setlocal & call :TSforgeActivation & cls & endlocal & goto :MainMenu
-if %_erl%==2 setlocal & call :OhookActivation   & cls & endlocal & goto :MainMenu
+if %_erl%==1 setlocal & call :OhookActivation   & cls & endlocal & goto :MainMenu
 rem if %_erl%==1 setlocal & call :HWIDActivation    & cls & endlocal & goto :MainMenu
 goto :MainMenu
 
@@ -577,7 +577,7 @@ echo:                     Extraer la carpeta $OEM$ en el escritorio
 echo:         ____________________________________________________________
 echo:
 rem echo:            [1] HWID             [Windows]
-echo:            [2] Activación de Office   [Office Permanente 2021 -2024]
+echo:            [1] Activación de Office   [Office Permanente 2024]
 rem echo:            [3] TSforge          [Windows / ESU / Office]
 rem echo:            [4] KMS38            [Windows]
 rem echo:            [5] Online KMS       [Windows / Office]
@@ -602,8 +602,8 @@ if %_erl%==6 (set "_oem=HWID [Windows] + Ohook [Office]" & set "para=/HWID /Ohoo
 if %_erl%==5 (set "_oem=Online KMS" & set "para=/K-WindowsOffice" &goto:Extract$OEM$3)
 if %_erl%==4 (set "_oem=KMS38" & set "para=/KMS38" &goto:Extract$OEM$3)
 if %_erl%==3 (set "_oem=TSforge" & set "para=/Z-WindowsESUOffice" &goto:Extract$OEM$3)
-if %_erl%==2 (set "_oem=Ohook" & set "para=/Ohook" &goto:Extract$OEM$3)
-if %_erl%==1 (set "_oem=HWID" & set "para=/HWID" &goto:Extract$OEM$3)
+if %_erl%==1 (set "_oem=Ohook" & set "para=/Ohook" &goto:Extract$OEM$3)
+if %_erl%==2 (set "_oem=HWID" & set "para=/HWID" &goto:Extract$OEM$3)
 goto :Extract$OEM$2
 
 ::========================================================================================================================================
