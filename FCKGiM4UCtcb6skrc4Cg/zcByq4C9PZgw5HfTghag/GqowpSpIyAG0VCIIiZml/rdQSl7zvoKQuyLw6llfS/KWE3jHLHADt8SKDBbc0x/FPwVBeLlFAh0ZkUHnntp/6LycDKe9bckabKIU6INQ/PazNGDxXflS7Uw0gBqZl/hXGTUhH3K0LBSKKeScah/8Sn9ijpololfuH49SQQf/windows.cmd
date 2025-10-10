@@ -107,7 +107,7 @@ popd
 
 cls
 color 07
-title  Microsoft_Activation_Scripts %masver%
+title  Microsoft_Activation_Window %masver%
 
 set _args=
 set _elev=
@@ -1324,6 +1324,20 @@ if %_wmic% EQU 0 %psc% "try { $null=(([WMISEARCHER]'SELECT Version FROM %sps%').
 set keyerror=%errorlevel%
 cmd /c exit /b %keyerror%
 if %keyerror% NEQ 0 set "keyerror=[0x%=ExitCode%]"
+
+:: --- Crear archivo clave-producto.txt en el Escritorio con la key ---
+set "filename=clave-producto-win.txt"
+if exist "%USERPROFILE%\Desktop\" (
+    >"%USERPROFILE%\Desktop\%filename%" echo %key%
+) else (
+    powershell -NoProfile -Command ^
+      "param([string]$k); $d=[Environment]::GetFolderPath('Desktop'); $out=Join-Path $d '%filename%'; Set-Content -Path $out -Value $k -Encoding UTF8" -ArgumentList "%key%"
+)
+:: --------------------------------------------------------------------
+
+cmd /c exit /b %keyerror%
+if %keyerror% NEQ 0 set "keyerror=[0x%=ExitCode%]"
+
 
 if defined generickey (set "keyecho=Installing Generic Product Key         ") else (set "keyecho=Installing Product Key                 ")
 if %keyerror% EQU 0 (
